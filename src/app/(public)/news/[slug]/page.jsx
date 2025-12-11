@@ -66,7 +66,7 @@ export default function NewsDetailPage() {
                     <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
                     
                     <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 my-8">
-                        <h3 class="font-bold text-blue-800 mb-2 text-lg">💡 Info Tambahan:</h3>
+                        <h3 className="font-bold text-blue-800 mb-2 text-lg">💡 Info Tambahan:</h3>
                         <p className="text-sm text-blue-700">Pastikan selalu mengecek informasi terkini dari pihak Taman Nasional sebelum melakukan pendakian.</p>
                     </div>
                 </div>
