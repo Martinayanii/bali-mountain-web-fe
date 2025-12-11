@@ -1,221 +1,113 @@
 "use client";
-import { useState } from "react";
-// Jika nanti Store Community sudah siap, import di sini
-// import { useCommunityStore } from '@/store/useCommunityStore';
+import { useState } from "react"; // Tambahkan useState
+import { useAppStore } from "@/store/useAppStore"; 
+import { FaTrash, FaUser, FaClock, FaMapMarkerAlt, FaExclamationTriangle } from "react-icons/fa";
+import toast from 'react-hot-toast'; // Import Toast
 
 export default function AdminCommunityPage() {
-  // --- STATE ---
-  const [view, setView] = useState("list"); // 'list' atau 'form'
-  const [editData, setEditData] = useState(null); // Data yang sedang diedit
+  const { trips, deleteTrip } = useAppStore();
 
-  // Data Dummy Awal (Data Postingan Komunitas)
-  const [posts, setPosts] = useState([
-    {
-      id: 1,
-      title: "Cari Barengan Merbabu via Selo",
-      user: "Rian_Pendaki",
-      destination: "Gunung Merbabu",
-      dateTrip: "20-22 Des 2025",
-      status: "Open", // Open, Full, Closed
-      quota: "Butuh 2 orang",
-      description: "Halo, cari barengan buat sharecost mobil dari Jogja..."
-    },
-    {
-      id: 2,
-      title: "Open Trip Rinjani Premium",
-      user: "Sinta_Outdoor",
-      destination: "Gunung Rinjani",
-      dateTrip: "31 Des 2025",
-      status: "Open",
-      quota: "Sisa 1 Seat",
-      description: "Include porter, tenda, makan. Tinggal bawa badan."
-    },
-    {
-      id: 3,
-      title: "Tektok Prau Sunrise",
-      user: "Budi_Santoso",
-      destination: "Gunung Prau",
-      dateTrip: "Besok Pagi",
-      status: "Full",
-      quota: "Penuh",
-      description: "Cari temen jalan aja biar ga sepi."
-    },
-  ]);
+  // STATE UNTUK MODAL
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedDeleteId, setSelectedDeleteId] = useState(null);
 
-  // Fungsi Tombol Edit
-  const handleEdit = (post) => {
-    setEditData(post);
-    setView("form");
+  // 1. KLIK TOMBOL HAPUS (BUKA MODAL)
+  const openDeleteModal = (id) => {
+    setSelectedDeleteId(id);
+    setIsDeleteModalOpen(true);
   };
 
-  // Fungsi Tombol Tambah (Admin posting pengumuman/ajakan resmi)
-  const handleAdd = () => {
-    setEditData(null); // Kosongkan form
-    setView("form");
-  };
-
-  // Fungsi Simpan (Dummy)
-  const handleSave = (e) => {
-    e.preventDefault();
-    alert("Data postingan berhasil disimpan (Simulasi)");
-    setView("list");
+  // 2. KONFIRMASI HAPUS (EKSEKUSI)
+  const confirmDelete = () => {
+    if (selectedDeleteId) {
+        deleteTrip(selectedDeleteId); // Hapus dari store
+        toast.success("Postingan berhasil dihapus!"); // Tampilkan toast
+        setIsDeleteModalOpen(false); // Tutup modal
+        setSelectedDeleteId(null);
+    }
   };
 
   return (
-    <div className="animate-fade-in p-6">
+    <div className="animate-fade-in relative">
       
-      {/* === TAMPILAN 1: LIST TABEL === */}
-      {view === "list" && (
-        <div className="bg-white border-radius-lg shadow-[0_2px_5px_rgba(0,0,0,0.05)] rounded-lg p-6">
-          <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
-            <h3 className="font-bold text-lg text-[#2c3e50]">Moderasi Req. Muncak</h3>
-            <button 
-              onClick={handleAdd}
-              className="bg-[#27ae60] text-white px-4 py-2 rounded flex items-center gap-2 text-sm hover:bg-green-700 transition"
-            >
-              <span>+</span> Buat Postingan
-            </button>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-[#f8f9fa] text-[#2c3e50]">
-                  <th className="p-3 text-sm font-semibold border-b border-gray-100">Judul / Info</th>
-                  <th className="p-3 text-sm font-semibold border-b border-gray-100">Oleh</th>
-                  <th className="p-3 text-sm font-semibold border-b border-gray-100">Tujuan</th>
-                  <th className="p-3 text-sm font-semibold border-b border-gray-100">Status</th>
-                  <th className="p-3 text-sm font-semibold border-b border-gray-100">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="text-gray-600 text-sm">
-                {posts.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="p-3 border-b border-gray-100">
-                        <div className="font-medium text-[#2c3e50]">{item.title}</div>
-                        <div className="text-xs text-gray-400">{item.dateTrip}</div>
-                    </td>
-                    <td className="p-3 border-b border-gray-100 font-medium">{item.user}</td>
-                    <td className="p-3 border-b border-gray-100">{item.destination}</td>
-                    <td className="p-3 border-b border-gray-100">
-                      {item.status === "Open" ? (
-                        <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-semibold border border-green-200">
-                          Open
-                        </span>
-                      ) : (
-                        <span className="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-semibold border border-red-200">
-                          {item.status}
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-3 border-b border-gray-100 flex gap-2">
-                      <button 
-                        onClick={() => handleEdit(item)}
-                        className="bg-[#3498db] text-white px-2 py-1 rounded hover:bg-blue-600 transition"
-                        title="Edit / Moderasi"
-                      >
-                        ✎
-                      </button>
-                      <button className="bg-[#e74c3c] text-white px-2 py-1 rounded hover:bg-red-600 transition" title="Hapus Postingan">
-                        🗑
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      <div className="bg-white rounded-lg shadow-[0_2px_5px_rgba(0,0,0,0.05)] p-6">
+        <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+          <h3 className="font-bold text-lg text-[#2c3e50]">Moderasi Postingan Komunitas</h3>
+          <div className="text-sm text-gray-500">Total: {trips.length} Postingan</div>
         </div>
-      )}
 
-      {/* === TAMPILAN 2: FORM TAMBAH/EDIT === */}
-      {view === "form" && (
-        <div className="bg-white max-w-4xl mx-auto rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.05)] p-8">
-          <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
-            <h3 className="font-bold text-lg text-[#2c3e50]">
-              {editData ? "Edit Postingan" : "Buat Postingan Baru"}
-            </h3>
-            <button 
-              onClick={() => setView("list")}
-              className="bg-[#95a5a6] text-white px-4 py-2 rounded text-sm hover:bg-gray-500 transition"
-            >
-              Kembali
-            </button>
-          </div>
+        {/* LIST POSTINGAN */}
+        <div className="space-y-4">
+          {trips.map((trip) => (
+            <div key={trip.id} className="bg-white border border-gray-100 rounded-lg p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:shadow-sm transition">
+                
+                {/* Konten Kiri */}
+                <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-bold text-[#2c3e50] text-lg">{trip.title}</h4>
+                        <span className={`text-[10px] px-2 py-0.5 rounded font-bold border 
+                            ${trip.type === 'Open' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                            {trip.type}
+                        </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-4 text-xs text-gray-400 mb-2">
+                        <span className="flex items-center gap-1"><FaUser /> {trip.leader}</span>
+                        <span className="flex items-center gap-1"><FaClock /> {trip.date}</span>
+                        <span className="flex items-center gap-1"><FaMapMarkerAlt /> {trip.location}</span>
+                    </div>
 
-          <form onSubmit={handleSave}>
-            {/* Input Judul */}
-            <div className="mb-6">
-               <label className="block text-sm font-medium text-gray-700 mb-1">Judul Rencana</label>
-               <input 
-                 type="text" 
-                 defaultValue={editData?.title} 
-                 className="w-full border border-gray-300 rounded p-3 text-base focus:outline-none focus:border-[#27ae60] font-medium" 
-                 placeholder="Contoh: Cari Barengan Merbabu Sharecost..." 
-               />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                {/* Kolom Kiri */}
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Tujuan Gunung</label>
-                        <select className="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-[#27ae60] bg-white">
-                            <option>Gunung Rinjani</option>
-                            <option>Gunung Semeru</option>
-                            <option>Gunung Merbabu</option>
-                            <option>Gunung Prau</option>
-                            <option>Gunung Kerinci</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Trip</label>
-                        <input type="text" defaultValue={editData?.dateTrip} className="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-[#27ae60]" placeholder="20 Des 2025" />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">User Pembuat</label>
-                        <input type="text" defaultValue={editData?.user || "Admin"} className="w-full border border-gray-300 rounded p-2 text-sm bg-gray-50" readOnly={!!editData} />
-                    </div>
+                    <p className="text-sm text-gray-600 line-clamp-1">
+                        {trip.description}
+                    </p>
                 </div>
 
-                {/* Kolom Kanan */}
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Status Kuota</label>
-                        <select className="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-[#27ae60] bg-white">
-                            <option value="Open">Masih Dibuka (Open)</option>
-                            <option value="Full">Penuh (Full)</option>
-                            <option value="Closed">Ditutup/Selesai</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Info Kuota</label>
-                        <input type="text" defaultValue={editData?.quota} className="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-[#27ae60]" placeholder="Misal: Butuh 2 orang lagi" />
-                    </div>
-                </div>
-            </div>
-
-            {/* Deskripsi */}
-            <div className="space-y-4 mb-8">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Deskripsi Lengkap</label>
-                    <textarea 
-                        defaultValue={editData?.description}
-                        className="w-full border border-gray-300 rounded p-4 text-sm h-32 focus:outline-none focus:border-[#27ae60]" 
-                        placeholder="Jelaskan detail meeting point, biaya, dan persyaratan..."
-                    ></textarea>
-                </div>
-            </div>
-
-            <div className="text-right flex justify-end gap-3">
-                <button type="button" onClick={() => setView('list')} className="px-6 py-2.5 rounded border border-gray-300 text-gray-600 hover:bg-gray-50 transition font-medium text-sm">
-                    Batal
+                {/* Tombol Aksi Kanan */}
+                <button 
+                    onClick={() => openDeleteModal(trip.id)} // Buka Modal
+                    className="bg-[#e74c3c] text-white px-4 py-2 rounded text-sm hover:bg-red-700 transition flex items-center gap-2 flex-shrink-0"
+                    title="Hapus Postingan"
+                >
+                    <FaTrash /> Hapus
                 </button>
-                <button type="submit" className="bg-[#27ae60] text-white px-6 py-2.5 rounded hover:bg-green-700 transition font-medium text-sm">
-                    {editData ? "Update Postingan" : "Terbitkan"}
-                </button>
+
             </div>
-          </form>
+          ))}
+
+          {trips.length === 0 && (
+            <div className="text-center py-10 text-gray-400">
+                Tidak ada postingan komunitas saat ini.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* === CUSTOM DELETE MODAL === */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6 text-center transform transition-all scale-100">
+                <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+                    <FaExclamationTriangle />
+                </div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Hapus Postingan?</h3>
+                <p className="text-sm text-gray-500 mb-6">
+                    Apakah Anda yakin ingin menghapus postingan ini? <br/> Tindakan ini tidak dapat dibatalkan.
+                </p>
+                <div className="flex gap-3 justify-center">
+                    <button 
+                        onClick={() => setIsDeleteModalOpen(false)}
+                        className="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-600 text-sm font-bold hover:bg-gray-50 transition"
+                    >
+                        Batal
+                    </button>
+                    <button 
+                        onClick={confirmDelete}
+                        className="px-5 py-2.5 rounded-lg bg-red-500 text-white text-sm font-bold hover:bg-red-600 shadow-lg shadow-red-200 transition"
+                    >
+                        Ya, Hapus
+                    </button>
+                </div>
+            </div>
         </div>
       )}
 

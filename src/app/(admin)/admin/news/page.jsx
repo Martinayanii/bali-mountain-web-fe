@@ -1,70 +1,92 @@
 "use client";
 import { useState } from "react";
-// Jika nanti Anda sudah siap dengan Store, import useNewsStore di sini
-// import { useNewsStore } from '@/store/useNewsStore';
+import { useAppStore } from "@/store/useAppStore"; 
+import { FaPlus, FaEdit, FaTrash, FaArrowLeft, FaSave, FaBold, FaItalic, FaUnderline, FaListUl, FaListOl, FaImage, FaLink, FaAlignLeft, FaExclamationTriangle } from "react-icons/fa";
+import toast from 'react-hot-toast';
 
 export default function AdminNewsPage() {
-  // --- STATE ---
-  const [view, setView] = useState("list"); // 'list' atau 'form'
-  const [editData, setEditData] = useState(null); // Data yang sedang diedit
+  const { newsList, addNews, updateNews, deleteNews } = useAppStore();
+  
+  const [view, setView] = useState("list");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState(null);
+  
+  // STATE BARU UNTUK MODAL HAPUS
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedDeleteId, setSelectedDeleteId] = useState(null);
 
-  // Data Dummy Awal (Nanti bisa dipindahkan ke src/lib/data.js atau useNewsStore.js)
-  const [blogs, setBlogs] = useState([
-    {
-      id: 1,
-      title: "Tips Packing Ultralight: Ringan & Aman",
-      category: "Tips & Trik",
-      date: "10 Des 2025",
-      status: "Published",
-    },
-    {
-      id: 2,
-      title: "Review Tenda Kapasitas 4 Terbaik 2025",
-      category: "Review Gear",
-      date: "08 Des 2025",
-      status: "Draft",
-    },
-    {
-      id: 3,
-      title: "Estimasi Biaya Pendakian Rinjani via Sembalun",
-      category: "Jalur & Ekspedisi",
-      date: "05 Des 2025",
-      status: "Published",
-    },
-  ]);
+  const [formData, setFormData] = useState({
+    title: "", category: "Tips & Trik", content: "", image: null
+  });
 
-  // Fungsi Tombol Edit
-  const handleEdit = (blog) => {
-    setEditData(blog);
-    setView("form");
-  };
-
-  // Fungsi Tombol Tambah
+  // --- HANDLER ---
   const handleAdd = () => {
-    setEditData(null); // Kosongkan form
+    setFormData({ title: "", category: "Tips & Trik", content: "", image: null });
+    setIsEditing(false);
+    setEditId(null);
     setView("form");
   };
 
-  // Fungsi Simpan (Dummy)
+  const handleEdit = (item) => {
+    setFormData({
+        title: item.title,
+        category: item.category,
+        content: item.content || "", 
+        image: item.image
+    });
+    setEditId(item.id);
+    setIsEditing(true);
+    setView("form");
+  };
+
+  // 1. KLIK TOMBOL HAPUS (Hanya Buka Modal)
+  const openDeleteModal = (id) => {
+    setSelectedDeleteId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  // 2. KONFIRMASI HAPUS (Eksekusi Hapus)
+  const confirmDelete = () => {
+    if (selectedDeleteId) {
+        deleteNews(selectedDeleteId);
+        toast.success("Artikel berhasil dihapus!");
+        setIsDeleteModalOpen(false); // Tutup modal
+        setSelectedDeleteId(null);
+    }
+  };
+
   const handleSave = (e) => {
     e.preventDefault();
-    alert("Artikel berhasil disimpan (Simulasi)");
+    if (isEditing && editId) {
+        updateNews(editId, {
+            ...formData,
+            slug: formData.title.toLowerCase().replace(/ /g, "-") 
+        });
+        toast.success("Artikel berhasil diperbarui!");
+    } else {
+        addNews({
+          ...formData,
+          image: "https://images.unsplash.com/photo-1551632811-561732d1e306?q=80&w=800",
+          slug: formData.title.toLowerCase().replace(/ /g, "-")
+        });
+        toast.success("Artikel baru diterbitkan!");
+    }
     setView("list");
   };
 
   return (
-    <div className="animate-fade-in p-6"> {/* Tambahkan padding container */}
+    <div className="animate-fade-in relative">
       
-      {/* === TAMPILAN 1: LIST TABEL === */}
+      {/* === TAMPILAN 1: LIST ARTIKEL === */}
       {view === "list" && (
-        <div className="bg-white border-radius-lg shadow-[0_2px_5px_rgba(0,0,0,0.05)] rounded-lg p-6">
+        <div className="bg-white rounded-lg shadow-[0_2px_5px_rgba(0,0,0,0.05)] p-6">
           <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
-            <h3 className="font-bold text-lg text-[#2c3e50]">Manajemen Berita & Artikel</h3>
+            <h3 className="font-bold text-lg text-[#2c3e50]">Daftar Artikel</h3>
             <button 
               onClick={handleAdd}
-              className="bg-[#27ae60] text-white px-4 py-2 rounded flex items-center gap-2 text-sm hover:bg-green-700 transition"
+              className="bg-[#27ae60] text-white px-4 py-2 rounded flex items-center gap-2 text-sm hover:bg-green-700 transition shadow-sm"
             >
-              <span>+</span> Tulis Artikel
+              <FaPlus /> Tulis Artikel
             </button>
           </div>
 
@@ -75,147 +97,104 @@ export default function AdminNewsPage() {
                   <th className="p-3 text-sm font-semibold border-b border-gray-100">Judul Artikel</th>
                   <th className="p-3 text-sm font-semibold border-b border-gray-100">Kategori</th>
                   <th className="p-3 text-sm font-semibold border-b border-gray-100">Tanggal</th>
-                  <th className="p-3 text-sm font-semibold border-b border-gray-100">Status</th>
                   <th className="p-3 text-sm font-semibold border-b border-gray-100">Aksi</th>
                 </tr>
               </thead>
               <tbody className="text-gray-600 text-sm">
-                {blogs.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="p-3 border-b border-gray-100 font-medium">{item.title}</td>
+                {newsList.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50 transition">
+                    <td className="p-3 border-b border-gray-100 font-medium text-[#2c3e50]">{item.title}</td>
                     <td className="p-3 border-b border-gray-100">
-                      <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs border border-gray-200">
-                        {item.category}
-                      </span>
+                        <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded text-xs font-bold border border-blue-100">
+                            {item.category}
+                        </span>
                     </td>
                     <td className="p-3 border-b border-gray-100">{item.date}</td>
-                    <td className="p-3 border-b border-gray-100">
-                      {item.status === "Published" ? (
-                        <span className="text-green-600 font-medium flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-green-500"></span> Terbit
-                        </span>
-                      ) : (
-                        <span className="text-orange-500 font-medium flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-orange-400"></span> Draft
-                        </span>
-                      )}
-                    </td>
                     <td className="p-3 border-b border-gray-100 flex gap-2">
-                      <button 
-                        onClick={() => handleEdit(item)}
-                        className="bg-[#3498db] text-white px-2 py-1 rounded hover:bg-blue-600 transition"
-                        title="Edit Artikel"
-                      >
-                        ✎
+                      
+                      <button onClick={() => handleEdit(item)} className="bg-[#3498db] text-white p-2 rounded hover:bg-blue-600 transition" title="Edit">
+                        <FaEdit />
                       </button>
-                      <button className="bg-[#e74c3c] text-white px-2 py-1 rounded hover:bg-red-600 transition" title="Hapus Artikel">
-                        🗑
+
+                      {/* GANTI DENGAN OPEN MODAL */}
+                      <button onClick={() => openDeleteModal(item.id)} className="bg-[#e74c3c] text-white p-2 rounded hover:bg-red-600 transition" title="Hapus">
+                        <FaTrash />
                       </button>
+
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            {newsList.length === 0 && (
+                <div className="text-center py-8 text-gray-400 text-sm">Belum ada artikel.</div>
+            )}
           </div>
         </div>
       )}
 
-      {/* === TAMPILAN 2: FORM TAMBAH/EDIT === */}
+      {/* === TAMPILAN 2: FORM EDITOR (Sama seperti sebelumnya) === */}
       {view === "form" && (
-        <div className="bg-white max-w-5xl mx-auto rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.05)] p-8">
+        <div className="bg-white max-w-4xl mx-auto rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.05)] p-8 animate-fade-in">
           <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
-            <h3 className="font-bold text-lg text-[#2c3e50]">
-              {editData ? "Edit Artikel" : "Tulis Artikel Baru"}
-            </h3>
-            <button 
-              onClick={() => setView("list")}
-              className="bg-[#95a5a6] text-white px-4 py-2 rounded text-sm hover:bg-gray-500 transition"
-            >
-              Kembali
+            <h3 className="font-bold text-lg text-[#2c3e50]">{isEditing ? "Edit Artikel" : "Editor Artikel"}</h3>
+            <button onClick={() => setView("list")} className="bg-[#95a5a6] text-white px-4 py-2 rounded text-sm hover:bg-gray-500 transition flex items-center gap-2">
+              <FaArrowLeft /> Kembali
             </button>
           </div>
-
           <form onSubmit={handleSave}>
-            {/* Judul Artikel (Full Width) */}
-            <div className="mb-6">
-               <label className="block text-sm font-medium text-gray-700 mb-1">Judul Artikel</label>
-               <input 
-                 type="text" 
-                 defaultValue={editData?.title} 
-                 className="w-full border border-gray-300 rounded p-3 text-base focus:outline-none focus:border-[#27ae60] font-medium" 
-                 placeholder="Contoh: Tips Mendaki Saat Musim Hujan..." 
-               />
+            <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Judul Artikel</label>
+                <input type="text" required className="w-full border border-gray-300 rounded p-3 text-lg font-bold focus:outline-none focus:border-[#27ae60]" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} />
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                {/* Kolom Kiri */}
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
-                        <select className="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-[#27ae60] bg-white">
-                            <option>Tips & Trik</option>
-                            <option>Review Gear</option>
-                            <option>Jalur & Ekspedisi</option>
-                            <option>Berita Alam</option>
-                            <option>Cerita Pendaki</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Foto Cover</label>
-                        <input type="file" className="w-full border border-gray-300 rounded p-2 text-sm text-gray-500" />
-                    </div>
-                </div>
-
-                {/* Kolom Kanan */}
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Status Publikasi</label>
-                        <select className="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-[#27ae60] bg-white">
-                            <option value="published">Langsung Terbitkan</option>
-                            <option value="draft">Simpan sebagai Draft</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Penulis (Author)</label>
-                        <input type="text" defaultValue="Admin" className="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-[#27ae60]" readOnly />
-                    </div>
-                </div>
-            </div>
-
-            {/* Area Editor Konten */}
-            <div className="space-y-4 mb-8">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Isi Artikel</label>
-                    <div className="border border-gray-300 rounded overflow-hidden">
-                        {/* Toolbar Simulasi */}
-                        <div className="bg-gray-50 border-b border-gray-300 p-2 flex gap-2">
-                             <button type="button" className="p-1 px-2 hover:bg-gray-200 rounded font-bold text-xs">B</button>
-                             <button type="button" className="p-1 px-2 hover:bg-gray-200 rounded italic text-xs">I</button>
-                             <button type="button" className="p-1 px-2 hover:bg-gray-200 rounded underline text-xs">U</button>
-                             <span className="border-r border-gray-300 mx-1"></span>
-                             <button type="button" className="p-1 px-2 hover:bg-gray-200 rounded text-xs">H1</button>
-                             <button type="button" className="p-1 px-2 hover:bg-gray-200 rounded text-xs">H2</button>
-                        </div>
-                        <textarea 
-                            className="w-full p-4 text-sm h-64 focus:outline-none" 
-                            placeholder="Mulai menulis cerita petualanganmu di sini..."
-                        ></textarea>
-                    </div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+                    <select className="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-[#27ae60] bg-white" value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}>
+                        <option>Tips & Trik</option><option>Review Gear</option><option>Info Jalur</option><option>Berita Alam</option><option>Cerita Pendaki</option>
+                    </select>
+                </div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Foto Cover</label><input type="file" className="w-full border border-gray-300 rounded p-2 text-sm text-gray-500" /></div>
+            </div>
+            <div className="mb-6"><label className="block text-sm font-medium text-gray-700 mb-1">Konten Artikel</label><div className="border border-gray-300 rounded overflow-hidden bg-white"><div className="bg-[#f8f9fa] p-2 border-b border-gray-300 flex gap-1 flex-wrap"><ToolBtn icon={<FaBold />} /><ToolBtn icon={<FaItalic />} /></div><textarea className="w-full p-4 min-h-[300px] outline-none text-sm text-gray-700 leading-relaxed resize-y" value={formData.content} onChange={(e) => setFormData({...formData, content: e.target.value})}></textarea></div></div>
+            <div className="text-right"><button type="submit" className="bg-[#27ae60] text-white px-6 py-2.5 rounded hover:bg-green-700 transition font-medium text-sm flex items-center gap-2 ml-auto"><FaSave /> {isEditing ? "Simpan Perubahan" : "Terbitkan Artikel"}</button></div>
+          </form>
+        </div>
+      )}
+
+      {/* === CUSTOM DELETE MODAL === */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6 text-center transform transition-all scale-100">
+                <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+                    <FaExclamationTriangle />
+                </div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Hapus Artikel?</h3>
+                <p className="text-sm text-gray-500 mb-6">
+                    Apakah Anda yakin ingin menghapus artikel ini? <br/> Tindakan ini tidak dapat dibatalkan.
+                </p>
+                <div className="flex gap-3 justify-center">
+                    <button 
+                        onClick={() => setIsDeleteModalOpen(false)}
+                        className="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-600 text-sm font-bold hover:bg-gray-50 transition"
+                    >
+                        Batal
+                    </button>
+                    <button 
+                        onClick={confirmDelete}
+                        className="px-5 py-2.5 rounded-lg bg-red-500 text-white text-sm font-bold hover:bg-red-600 shadow-lg shadow-red-200 transition"
+                    >
+                        Ya, Hapus
+                    </button>
                 </div>
             </div>
-
-            <div className="text-right flex justify-end gap-3">
-                <button type="button" onClick={() => setView('list')} className="px-6 py-2.5 rounded border border-gray-300 text-gray-600 hover:bg-gray-50 transition font-medium text-sm">
-                    Batal
-                </button>
-                <button type="submit" className="bg-[#27ae60] text-white px-6 py-2.5 rounded hover:bg-green-700 transition font-medium text-sm">
-                    {editData ? "Update Artikel" : "Terbitkan Artikel"}
-                </button>
-            </div>
-          </form>
         </div>
       )}
 
     </div>
   );
+}
+
+function ToolBtn({ icon, text, title }) {
+    return <button type="button" className="p-1.5 min-w-[30px] rounded hover:bg-gray-200 text-gray-600 text-sm flex items-center justify-center transition" title={title}>{icon || <span className="font-bold text-xs">{text}</span>}</button>;
 }
